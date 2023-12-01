@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-var digitNames = []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "zero"}
+var digitNames = []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 
 // replaces spelled out digits with the digit strings
 func replace(input string) string {
