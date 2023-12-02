@@ -10,13 +10,16 @@ import (
 var maxNumbers = make(map[string]int64)
 
 var exampleInput1 = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green\nGame 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue\nGame 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red\nGame 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red\nGame 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
+var exampleInput2 = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green\nGame 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue\nGame 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red\nGame 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red\nGame 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 
 func main() {
 	initialize()
 
 	games := splitInput(openInput())
 
-	fmt.Println(processPossibleGames(games))
+	fmt.Println("Part 1:", processPossibleGames(games))
+
+	fmt.Println("Part 2:", processMinNumbers(games))
 
 }
 
@@ -61,15 +64,46 @@ func separators(r rune) bool {
 	return r == ',' || r == ';'
 }
 
+func processMinNumbers(gamesMap map[int][]string) int {
+	sum := 0
+
+	minMap := make(map[string]int64)
+
+	for _, draws := range gamesMap {
+		power := 1
+
+		minMap["red"] = 0
+		minMap["green"] = 0
+		minMap["blue"] = 0
+
+		for i := range draws {
+			draws[i] = strings.Trim(draws[i], " ,;\n")
+			comps := strings.Split(draws[i], " ")
+
+			color := comps[1]
+			number, err := strconv.ParseInt(comps[0], 10, 64)
+			if err != nil {
+				panic(err.Error())
+			}
+
+			if minMap[color] < number {
+				minMap[color] = number
+			}
+		}
+
+		for _, v := range minMap {
+			power *= int(v)
+		}
+
+		sum += power
+	}
+
+	return sum
+}
+
 func processPossibleGames(gamesMap map[int][]string) int {
 
 	sum := 0
-	k := 0
-	for i := 0; i <= 100; i++ {
-		k += i
-	}
-
-	fmt.Printf("k: %v\n", k)
 
 	for id, draws := range gamesMap {
 		possible := true
