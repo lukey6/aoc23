@@ -5,14 +5,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
-var exampleInput1 = "467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598.."
+var exampleInput1 = "467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..\n"
 
 func main() {
 
-	lines := parseInputLines(exampleInput1)
+	lines := parseInputLines(loadInput())
 
 	fmt.Println("Part 1:", calculatePart1(lines))
 }
@@ -34,18 +33,31 @@ func calculatePart1(lines []string) int {
 		start := -1
 		end := -1
 
-		fmt.Println(line)
-
 		for j := range line {
-			fmt.Println(j)
 			if isDigit(line[j]) {
+				// if line[j] is digit and start not marked, mark start
 				if start == -1 {
 					start = j
 				}
-			} else if start != -1 {
-				end = j - 1
 
-				nr, err := strconv.ParseInt(line[start:end+1], 10, 64)
+				if j >= len(line)-1 || !isDigit(line[j+1]) {
+					// if line[j] is last in line or the next one is no digit, mark end
+					end = j
+				}
+			}
+
+			if start != -1 && end != -1 {
+				// if line[j] is no digit and start and end are marked save number, unmark start and end
+				var nr int64
+				var err error
+
+				if j >= len(line) {
+					// if end+1 is out of bounds take string until end of line
+					nr, err = strconv.ParseInt(line[start:], 10, 64)
+				} else {
+					nr, err = strconv.ParseInt(line[start:end+1], 10, 64)
+				}
+
 				if err != nil {
 					panic(err.Error())
 				}
@@ -61,10 +73,10 @@ func calculatePart1(lines []string) int {
 				end = -1
 			}
 		}
+	}
 
-		for i := range numbers {
-			markAdjacentToSymbol(numbers[i], lines)
-		}
+	for i := range numbers {
+		markAdjacentToSymbol(numbers[i], lines)
 	}
 
 	return addMarked(numbers)
@@ -81,24 +93,23 @@ func addMarked(nrs []*number) int {
 	return sum
 }
 
+// TODO result too low => missing nrs
 func markAdjacentToSymbol(nr *number, lines []string) {
 	if nr == nil {
 		return
 	}
-	localLines := make([]string, len(lines))
-	copy(localLines, lines)
 
 	for j := nr.start - 1; j <= nr.end+1; j++ {
 		if j < 0 {
 			continue
 		}
-		if j > 0 && nr.line > 0 && !isDigitOrPoint(localLines[nr.line-1][j]) {
+		if j >= 0 && nr.line > 0 && j < len(lines[nr.line-1]) && !isDigitOrPoint(lines[nr.line-1][j]) {
 			nr.add = true
 			break
-		} else if !isDigitOrPoint(localLines[nr.line][j]) {
+		} else if j < len(lines[nr.line]) && !isDigitOrPoint(lines[nr.line][j]) {
 			nr.add = true
 			break
-		} else if nr.line < len(localLines)-2 && j < len(localLines[j])-1 && !isDigitOrPoint(localLines[nr.line+1][j]) {
+		} else if nr.line < len(lines)-1 && j < len(lines[nr.line+1])-1 && !isDigitOrPoint(lines[nr.line+1][j]) {
 			nr.add = true
 			break
 		}
@@ -110,7 +121,7 @@ func isDigitOrPoint(c uint8) bool {
 }
 
 func isDigit(c uint8) bool {
-	return unicode.IsDigit(rune(c)) && c != '.'
+	return strings.ContainsRune("0123456789", rune(c))
 }
 
 func parseInputLines(input string) []string {
