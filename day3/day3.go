@@ -7,24 +7,125 @@ import (
 	"strings"
 )
 
-var exampleInput1 = "467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..\n"
+var exampleInput = "467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..\n"
 
 func main() {
 
-	lines := parseInputLines(loadInput())
+	lines := parseInputLines(exampleInput)
 
 	fmt.Println("Part 1:", calculatePart1(lines))
+	fmt.Println("Part 2:", calculatePart2(lines))
 }
 
-type number struct {
-	line   int
-	start  int
-	end    int
-	number int
-	add    bool
+type gear struct {
+	line            int
+	column          int
+	numberOfNumbers int
+	number1         number
+	number2         number
 }
 
-func calculatePart1(lines []string) int {
+func calculatePart2(lines []string) int {
+
+	numbers := findNumbers(lines)
+
+	grs := gears(numbers, lines)
+
+	return multiplyAndAddGears(grs)
+}
+
+func gears(nrs []*number, lines []string) []*gear {
+	grs := make([]*gear, 0)
+
+	for i := range nrs {
+		nr := nrs[i]
+
+		gr, ok := adjacentGear(nr, lines)
+		if ok {
+			if !gearExists(gr, grs) {
+				gr.number1 = *nr
+				grs = append(grs, gr)
+			} else {
+				if gr.numberOfNumbers == 1 {
+					gr.number2 = *nr
+				}
+				gr.numberOfNumbers++
+			}
+		}
+	}
+	return grs
+}
+
+func multiplyAndAddGears(grs []*gear) int {
+	sum := 0
+	for i := range grs {
+		gr := grs[i]
+		if gr != nil {
+			if gr.numberOfNumbers == 2 {
+				sum += gr.number1.number * gr.number2.number
+			}
+		}
+	}
+	return sum
+}
+
+// returns adjacent gear and true if gear is adjacent to nr or nil and false if not
+func adjacentGear(nr *number, lines []string) (*gear, bool) {
+	if nr == nil {
+		return nil, false
+	}
+
+	// left same line
+	if nr.start > 0 && isGear(lines[nr.line][nr.start-1]) {
+		return &gear{
+			line:   nr.line,
+			column: nr.start - 1,
+		}, true
+	}
+
+	// right same line
+	if nr.end < len(lines[nr.line])-1 && isGear(lines[nr.line][nr.end+1]) {
+		return &gear{
+			line:   nr.line,
+			column: nr.start - 1,
+		}, true
+	}
+
+	// line below
+	for k := min(len(lines), nr.start+1); k < min(len(lines), nr.end+1); k++ {
+		if isGear(lines[nr.line][k]) {
+			return &gear{
+				line:   nr.line,
+				column: nr.start - 1,
+			}, true
+		}
+	}
+
+	// line above
+	for k := max(0, nr.start-1); k < min(len(lines[nr.line]), nr.end+1); k++ {
+		if isGear(lines[nr.line][k]) {
+			return &gear{
+				line:   nr.line,
+				column: nr.start - 1,
+			}, true
+		}
+	}
+
+	//TODO...
+
+	return nil, false
+}
+
+func gearExists(gr *gear, grs []*gear) bool {
+	for i := range grs {
+		if gr != nil && gr.line == grs[i].line && gr.column == grs[i].column {
+			return true
+		}
+	}
+	return false
+}
+
+func findNumbers(lines []string) []*number {
 	numbers := make([]*number, 1)
 
 	for i := range lines {
@@ -75,6 +176,21 @@ func calculatePart1(lines []string) int {
 		}
 	}
 
+	return numbers
+}
+
+type number struct {
+	line   int
+	start  int
+	end    int
+	number int
+	add    bool
+}
+
+func calculatePart1(lines []string) int {
+
+	numbers := findNumbers(lines)
+
 	for i := range numbers {
 		markAdjacentToSymbol(numbers[i], lines)
 	}
@@ -114,6 +230,10 @@ func markAdjacentToSymbol(nr *number, lines []string) {
 			break
 		}
 	}
+}
+
+func isGear(c uint8) bool {
+	return c == uint8('*')
 }
 
 func isDigitOrPoint(c uint8) bool {
